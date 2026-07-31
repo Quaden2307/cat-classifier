@@ -41,6 +41,18 @@ runs/
 logs/
 checkpoints/
 
+# Private working notes (docs/ is intentionally public)
+CLAUDE.md
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+credentials.json
+
 # Editor / tooling
 .vscode/
 .idea/

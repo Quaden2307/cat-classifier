@@ -1,2 +1,6 @@
 torch
 torchvision
+numpy
+pillow
+matplotlib
+scikit-learn

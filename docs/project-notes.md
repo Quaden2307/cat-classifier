@@ -1,11 +1,17 @@
 # Project notes
 
-Running notes on scope, decisions, and known issues. See `CLAUDE.md` for background
-and working preferences.
+Running notes on scope, decisions, and known issues. Day-by-day progress is tracked
+separately in `progress-log.md`.
 
 ## Goal and deadline
 
 Full project complete by **August 31, 2026**.
+
+**Success criterion: F1 ≥ 0.90 on the ragdoll class**, with precision, recall, and a
+confusion matrix reported alongside. Accuracy is not the target on its own: the classes
+are imbalanced 21.7% / 78.3%, so a model that always answers "not ragdoll" scores 78.3%
+without learning anything, and even a genuinely 90%-accurate model can miss nearly half
+the ragdolls while hitting that number.
 
 The model is the point. Deployment is a follow-on task once the model is done, and is
 not expected to be a large effort.
