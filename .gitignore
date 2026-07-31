@@ -1,0 +1,48 @@
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# iCloud placeholder files
+*.icloud
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Image data — large, reproducible from the source link. Do not commit.
+data/**
+# ...but keep the small files that make the dataset reproducible:
+!data/dataset_link
+!data/**/*.csv
+!data/**/*.json
+!data/.gitkeep
+
+# Resized/cached copies of the dataset
+cache/
+*_resized/
+
+# Model checkpoints and training artifacts
+*.pt
+*.pth
+*.onnx
+runs/
+logs/
+checkpoints/
+
+# Editor / tooling
+.vscode/
+.idea/
+.mypy_cache/
+.pytest_cache/
