@@ -43,6 +43,7 @@ checkpoints/
 
 # Private working notes (docs/ is intentionally public)
 CLAUDE.md
+dev_plans/
 
 # Secrets — never commit
 .env
