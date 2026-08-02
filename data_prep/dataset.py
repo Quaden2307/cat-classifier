@@ -35,11 +35,12 @@ class CatDataset(torch.utils.data.Dataset):
         row = self.data.iloc[i]
         image_path = Path(row['image_path'])
         image = Image.open(image_path).convert('RGB')
+        label = row['ragdoll']
 
         if self.transform:
             image = self.transform(image)
 
-        return image
+        return image, label
 
 train = CatDataset(csv_path='data/splits.csv', split='train', transform=train_transform)
 val = CatDataset(csv_path='data/splits.csv', split='val', transform=eval_transform)
