@@ -18,8 +18,11 @@ not expected to be a large effort.
 
 ## Scope
 
-**Phase 1 — cat / not-cat (binary).** Current focus. Needs a negative class; the
-existing data is cats only.
+**Phase 1 — ragdoll / not-ragdoll (binary).** Current focus. Both classes come from the
+existing 5-breed set, so no negative class needs sourcing — and there is no risk of the
+model separating on resolution or compression artifacts instead of on the animal. The
+negatives contain the two hardest confusers: siamese (also colorpoint) and maine coon
+(also long-haired and large).
 
 **Phase 2 — breed classification.** The existing `data/cat_v1` is already breed-labeled
 across 5 classes. More breeds may be added later, so nothing should assume a fixed
@@ -34,9 +37,10 @@ attributable.
 
 ## Decisions made
 
-- **Shared data-prep module** used by both the MLP and the CNN. Shares the manifest,
-  label mapping, and file loading. Resolution, channel count, and whether the output is
-  flattened are parameterized, since the two models need different tensor shapes.
+- **Shared data-prep module** (`data_prep/`) used by both the MLP and the CNN. Shares the
+  manifest, label mapping, and file loading. Split into two files: `prep.py` builds the
+  manifest and is run once; `dataset.py` defines `CatDataset` and is imported. Keeping
+  them separate means importing the dataset can never regenerate the split.
 - **PIL, not OpenCV.** `cv2.imread` returns `None` on undecodable files instead of
   raising, and OpenCV loads BGR while all of torchvision assumes RGB. A channel swap
   would go unnoticed in the from-scratch models but would quietly degrade the
@@ -44,55 +48,78 @@ attributable.
 - **Subclass `torch.utils.data.Dataset`**, hand it to `DataLoader`. Writing
   `__len__`/`__getitem__` by hand is the part worth understanding; batching, shuffling,
   and worker parallelism come from `DataLoader`.
-- **Persist the train/val/test split to a manifest** (`path,label,split`) rather than
-  recomputing it per run. A fixed seed is not enough once files are added — and data
-  *will* be added (negatives now, more breeds later). Without a stable split, "the CNN
-  beat the MLP" is not a valid comparison.
+- **Persist the train/val/test split** to `data/splits.csv` rather than recomputing it
+  per run. Schema is `id,image_path,breed,ragdoll,split`. A fixed seed is not enough once
+  files are added — and data *will* be added (more breeds later). Without a stable split,
+  "the CNN beat the MLP" is not a valid comparison. The `breed` column is carried even
+  though phase 1 ignores it, so phase 2 does not require regenerating the file.
+- **Split 70/15/15, stratified on the ragdoll label**, seeded. Stratifying keeps each
+  pile at the same 21.7% ragdoll share; without it the ~143-image test pile varies by
+  roughly ±4.5 ragdolls, which moves F1 on its own.
+- **Center crop, not squash**, for aspect ratio — `Resize(256)` then `CenterCrop(224)`.
+  224 matches what the pretrained ResNet expects at stage 5.
+- **Transforms are attached per split**, not baked into the dataset class. Train, val,
+  and test each get their own pipeline so augmentation can never reach val or test.
 - Dedupe before splitting; split before augmenting.
 
 ## Open decisions
 
-- Source of the negative class for phase 1. The choice defines the task: easily
-  separable negatives (landscapes, cars) would let the MLP baseline score well and
-  destroy the value of the MLP-vs-CNN comparison. Dogs and other animals make the CNN
-  earn its result. Target ~950 to match the cat count.
-- Input resolution per model. 64x64 RGB is 12,288 inputs — at 128 hidden units that is
-  ~1.57M parameters in `W1` alone against ~1,500 training images. Expected for a
-  baseline, but should be chosen deliberately.
-- Aspect-ratio handling: squash to square (distorts) vs. center crop (discards). Either
-  is defensible; it must be applied identically everywhere.
+- **Where the flatten happens.** Either the dataset returns a flat vector for the MLP and
+  a `(3, H, W)` tensor for the CNN, or it always returns `(3, H, W)` and the MLP starts
+  with `nn.Flatten()`. The second removes a setting from the shared module and puts the
+  shape change in the model that needs it. Needs deciding before the MLP is written.
+- **Input resolution for the MLP.** The pipeline currently outputs 224x224, which is
+  150,528 inputs — at 128 hidden units that is ~19M parameters in `W1` alone against 664
+  training images. A smaller resolution for the MLP specifically (64x64 gives 12,288
+  inputs, ~1.5M parameters) is worth considering. The CNN and ResNet stay at 224.
+- **Normalization.** Currently commented out. Worth turning on later as a measurable
+  before/after rather than assumed — see the Normalization section below.
 
 ## Known data issues
 
-Dataset: `data/cat_v1`, 953 images, 548 MB, from the Kaggle link in
-`data/dataset_link`. Counts: bengal 177, domestic_shorthair 170, maine_coon 191,
-ragdoll 207, siamese 208.
+Dataset: `data/cat_v1`, **949 images** after cleanup, from the Kaggle link in
+`data/data_link`. Ragdoll is 206 of them (21.7%).
 
-- `maine_coon/2003-4288-2848-dsc-8088-2e700.dsc-8088.htm` is a failed download saved as
-  HTML. It will throw when a loader tries to decode it.
-- Mixed formats: 944 jpg/jpeg, 7 png, 1 webp. PNGs may carry an alpha channel — convert
-  to RGB explicitly or the channel count will not match the first layer.
+Resolved:
+
+- One failed download saved as HTML (`maine_coon/…dsc-8088.htm`) would have thrown on
+  decode. Deleted.
+- **Two images appeared in both `ragdoll/` and `siamese/` with identical bytes** —
+  contradictory labels on the hardest confuser pair. The dataset was deduplicated by
+  filename hash within each breed folder but not across them. Removed. A perceptual-hash
+  sweep over all remaining images found no other duplicates or near-duplicates.
+- Mixed formats (944 jpg/jpeg, 7 png, 1 webp) produce inconsistent channel counts —
+  verified 4 channels on one PNG (alpha) and 1 on another (grayscale). `.convert('RGB')`
+  in `__getitem__` normalizes all of them to 3; without it `DataLoader` cannot stack a
+  batch.
+
+Outstanding:
+
 - Sizes are heterogeneous (roughly 1024x768 up to 4032x3024, both orientations). Only
-  one apparent shared-source cluster at 1025x820.
-- Because the cats are messy multi-source scrapes, negatives pulled from a single clean
-  source would differ systematically in resolution and compression. A model can separate
-  on that alone without looking at an animal. Source negatives as messily as the cats.
-- ~575 KB average per image. Pre-resizing to a cache directory avoids decoding
-  multi-megapixel JPEGs every epoch.
+  one apparent shared-source cluster at 1025x820. Handled by resize + center crop.
+- ~575 KB average per image, 546 MB total. Every epoch decodes all of them from scratch.
+  Pre-resizing into a cache directory would cut training time substantially; worth doing
+  only once loading is measurably the bottleneck.
 
 ## Normalization
 
-Compute mean/std from the **training split only** — statistics over the full dataset
-leak test-set information. The pretrained ResNet stage is the exception: it requires
-ImageNet's constants, since the weights were fit under them.
+**Currently off.** `Normalize` is commented out of both pipelines. It buys a modest
+convergence speedup and does not decide whether the MLP works, so it is not worth
+blocking the baseline on.
 
-## Environment
+When it goes in: compute mean/std per channel from the **training split only** —
+statistics over the full dataset leak test-set information — via a run-once script whose
+output is six hard-coded numbers. The constants are specific to the resize geometry and
+need recomputing if that changes.
 
-Apple Silicon, macOS 15.3.1, `device="mps"`. Python 3.12.10.
+Because it is a one-line change, turning it on is a clean before/after measurement
+against the un-normalized baseline rather than an assumption.
 
-As of these notes, no virtualenv exists in this project and `torch` is not installed.
+The pretrained ResNet stage is the exception and is not optional there: it requires
+ImageNet's constants, `mean=[0.485, 0.456, 0.406]` and `std=[0.229, 0.224, 0.225]`,
+since the weights were fit under them.
 
-The project lives in iCloud Drive. iCloud can evict file contents and re-download on
-access, which can surface as slow or intermittently failing reads once a `DataLoader`
-with multiple workers is reading many files. Keep the venv and any resized cache out of
-sync where possible.
+## Data loading
+
+Start with `num_workers=0` in `DataLoader` and raise it only if loading is measurably the
+bottleneck. Dependencies are listed in `requirements.txt`.
