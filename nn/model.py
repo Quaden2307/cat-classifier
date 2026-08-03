@@ -12,9 +12,9 @@ train = CatDataset(csv_path='data/splits.csv', split='train', transform=train_tr
 val = CatDataset(csv_path='data/splits.csv', split='val', transform=eval_transform)
 test = CatDataset(csv_path='data/splits.csv', split='test', transform=eval_transform)   
 
-train_loader = DataLoader(train, batch_size=32, shuffle=True)
-val_loader = DataLoader(val, batch_size=32, shuffle=False)
-test_loader = DataLoader(test, batch_size=32, shuffle=False)
+train_loader = DataLoader(train, batch_size=32, shuffle=True, num_workers=0, drop_last=False)
+val_loader = DataLoader(val, batch_size=32, shuffle=False, num_workers=0, drop_last = False)
+test_loader = DataLoader(test, batch_size=32, shuffle=False, num_workers=0, drop_last=False)
 
 class CatMLP(nn.Module):
     def __init__(self, in_features, hidden, out_features):
@@ -22,11 +22,11 @@ class CatMLP(nn.Module):
         self.layer1 = nn.Linear(in_features, hidden)
         self.relu = nn.ReLU()
         self.layer2 = nn.Linear(hidden, out_features)
-        self.sigmoid = nn.Sigmoid()
+        self.flatten = nn.Flatten()
 
     def forward(self, x):
+        x = self.flatten(x)
         x = self.layer1(x)
         x = self.relu(x)
         x = self.layer2(x)
-        x = self.sigmoid(x)
         return x
