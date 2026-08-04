@@ -6,6 +6,8 @@ from torch.utils.data import DataLoader
 import pandas as pd
 import PIL.Image as Image
 from pathlib import Path   
+from sklearn.metrics import precision_recall_fscore_support
+
 
 
 train = CatDataset(csv_path='data/splits.csv', split='train', transform=train_transform)
@@ -33,7 +35,7 @@ class CatMLP(nn.Module):
 
 model = CatMLP(in_features=224*224*3, hidden=128, out_features=2)
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
 
 
 epochs = 10
@@ -60,4 +62,10 @@ for epoch in range(epochs):
             predictions.extend(outputs.argmax(dim=1).tolist())
             labels.extend(val_labels.tolist())
 
-    print(f"Training Loss: {train_loss / len(train_loader)} | Validation Loss: {val_loss / len(val_loader)}")
+    p, r, f1, _ = precision_recall_fscore_support(
+        labels, predictions, average='binary', pos_label=1, zero_division=0)
+    print(f"epoch {epoch+1:2}  train {train_loss/len(train_loader):.4f}  "
+        f"val {val_loss/len(val_loader):.4f}  P {p:.3f}  R {r:.3f}  F1 {f1:.3f}")
+
+
+
