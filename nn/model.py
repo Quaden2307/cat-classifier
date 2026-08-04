@@ -30,3 +30,34 @@ class CatMLP(nn.Module):
         x = self.relu(x)
         x = self.layer2(x)
         return x
+
+model = CatMLP(in_features=224*224*3, hidden=128, out_features=2)
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+
+epochs = 10
+for epoch in range(epochs):
+    model.train()
+    train_loss = 0.0
+    for images, labels in train_loader:
+        optimizer.zero_grad() #reset the gradient values 
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        train_loss += loss.item()
+        optimizer.step()
+
+    model.eval()
+    with torch.no_grad():
+        val_loss = 0.0
+        predictions = []
+        labels = []
+        for images, val_labels in val_loader:
+            outputs = model(images)
+            loss = criterion(outputs, val_labels)
+            val_loss += loss.item()
+            predictions.extend(outputs.argmax(dim=1).tolist())
+            labels.extend(val_labels.tolist())
+
+    print(f"Training Loss: {train_loss / len(train_loader)} | Validation Loss: {val_loss / len(val_loader)}")
