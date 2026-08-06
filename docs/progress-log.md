@@ -30,6 +30,14 @@ after adding random horizontal flips" is.
 - 5 epochs: val F1 0.658 → 0.732, still rising at the end. Test (one look):
   **P 0.718 / R 0.903 / F1 0.800**, confusion matrix [[101, 11], [3, 28]] — caught 28 of
   31 ragdolls, 11 false alarms in 112 negatives.
+- Fine-tune round: unfroze `layer4` (8.4M params at lr 1e-5, head at 1e-3 — param
+  groups), 10 epochs. Val F1 0.711 → **0.794**. Test:
+  **P 0.788 / R 0.839 / F1 0.812**, confusion matrix [[105, 7], [5, 26]].
+- Augmentation experiment: `RandomHorizontalFlip(p=0.5)`, train pipeline only. Val F1
+  0.787, test **P 0.806 / R 0.806 / F1 0.806**, matrix [[106, 6], [6, 25]] — one false
+  alarm traded for one miss vs. the no-flip run. **No measurable effect**; kept anyway
+  (costs nothing, marginally more robust). This run's weights are what
+  `resnet/resnet18_cats.pt` now holds — the ship model: **test F1 0.806**.
 
 **Decided**
 - **Reordered the plan: fine-tuned ResNet before the from-scratch CNN.** A deployable
@@ -45,10 +53,18 @@ after adding random horizontal flips" is.
   python.org does not use the system certificate store until its bundled
   `Install Certificates.command` is run. One-time fix.
 
+**Learned / hit (fine-tune round)**
+- Train loss ~0.05 vs val ~0.20 by epoch 10 — the model memorizes the 664 training
+  images. A single horizontal flip barely slowed that (train loss 0.045 → 0.056) and
+  moved F1 within noise.
+- **The noise floor on this dataset is ±0.02 F1.** With 31 ragdolls in val or test,
+  one cat changing sides moves recall by 1/31 ≈ 0.032. Differences smaller than that
+  are not evidence of anything.
+
 **Next**
-- Unfreeze `layer4` at lr 1e-5 (head stays at 1e-3), 10 epochs — iterate on **val
-  only**, test stays untouched until the final number.
-- Frontend/deployment for the ResNet.
+- Frontend/deployment for the ResNet — `resnet18_cats.pt` is the interface; better
+  weights can be swapped in later without touching the frontend.
+- Later: from-scratch CNN comparison (the original stage 4), then the write-up.
 
 ---
 

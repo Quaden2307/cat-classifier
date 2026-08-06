@@ -15,6 +15,7 @@ std = [0.229, 0.224, 0.225]
 train_transform = v2.Compose([
     v2.Resize(256),
     v2.CenterCrop(224),
+    v2.RandomHorizontalFlip(p=0.5),  #train only: a mirrored ragdoll is still a ragdoll
     v2.ToImage(),
     v2.ToDtype(torch.float32, scale=True),
     v2.Normalize(mean, std),
