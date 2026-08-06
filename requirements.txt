@@ -5,3 +5,8 @@ pillow
 matplotlib
 scikit-learn
 pandas
+
+# ONNX export and verification (resnet/export_onnx.py)
+onnx
+onnxscript
+onnxruntime

@@ -39,7 +39,25 @@ after adding random horizontal flips" is.
   (costs nothing, marginally more robust). This run's weights are what
   `resnet/resnet18_cats.pt` now holds — the ship model: **test F1 0.806**.
 
+**Done (frontend)**
+- Exported the ship model to ONNX (`resnet/export_onnx.py` → `frontend/model.onnx`,
+  43 MB single file). Parity-checked against PyTorch on all 143 test images:
+  predictions agree 143/143, max logit difference 4.9e-06.
+- Built the frontend (`frontend/`): static HTML/CSS/JS, no framework. Upload or
+  drag-drop a photo → preprocessing re-implemented in JS (resize shorter side to 256,
+  center crop 224, ImageNet normalize) → onnxruntime-web runs the ONNX model in the
+  visitor's browser → verdict + softmax confidence. Cozy ragdoll palette
+  (cream/powder-blue/camel), keycap-style button.
+- Verified the JS preprocessing is safe: simulated the browser's differences from PIL
+  (bilinear resize, 8-bit quantization, floor-offset crop) in Python — predictions
+  unchanged on 143/143 test images. Canvas-vs-PIL drift does not flip any decision.
+
 **Decided**
+- **Inference runs in the browser, not on a server.** The model is exported to ONNX
+  and executed by onnxruntime-web; hosting is a static site on Vercel. Reason: free
+  Python hosting sleeps when idle, and a recruiter clicking the link gets a cold start
+  or a dead page — a static site is always up instantly. Cost: preprocessing had to be
+  re-implemented in JS and verified against the Python pipeline (done, above).
 - **Reordered the plan: fine-tuned ResNet before the from-scratch CNN.** A deployable
   model plus frontend must exist well before the deadline; the ResNet is the model that
   ships, and the published benchmark (~82% from scratch vs ~97% fine-tuned at this data
@@ -49,9 +67,6 @@ after adding random horizontal flips" is.
 **Learned / hit**
 - MLP 0.48 → ResNet 0.80 test F1 on identical data, loop, and loss. The gap is
   features, not tuning — the strongest argument in the project for transfer learning.
-- Weight download failed with `SSL: CERTIFICATE_VERIFY_FAILED` — Python installed from
-  python.org does not use the system certificate store until its bundled
-  `Install Certificates.command` is run. One-time fix.
 
 **Learned / hit (fine-tune round)**
 - Train loss ~0.05 vs val ~0.20 by epoch 10 — the model memorizes the 664 training
@@ -62,8 +77,9 @@ after adding random horizontal flips" is.
   are not evidence of anything.
 
 **Next**
-- Frontend/deployment for the ResNet — `resnet18_cats.pt` is the interface; better
-  weights can be swapped in later without touching the frontend.
+- Deploy `frontend/` to Vercel and test in a real browser with photos outside the
+  dataset. Better weights swap in later by re-running the export — the frontend
+  never changes.
 - Later: from-scratch CNN comparison (the original stage 4), then the write-up.
 
 ---

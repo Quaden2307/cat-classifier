@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ragdoll or not?</title>
+  <meta name="description" content="Upload a cat photo and a fine-tuned ResNet judges whether it's a ragdoll — entirely in your browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="desk">
+  <div class="stage">
+    <aside class="cat-photo">
+      <div id="photo-placeholder" class="photo-placeholder">your cat renders here</div>
+      <img id="preview" class="hidden" alt="Your cat, awaiting judgement">
+    </aside>
+
+    <section id="result" class="result hidden" aria-live="polite">
+      <h2 id="verdict"></h2>
+      <p id="verdict-sub"></p>
+      <div class="confidence">
+        <div class="confidence-track"><div id="confidence-fill" class="confidence-fill"></div></div>
+        <span id="confidence-text"></span>
+      </div>
+    </section>
+  </div>
+
+  <main class="case">
+    <header>
+      <svg class="mascot" viewBox="0 0 120 104" aria-hidden="true">
+        <!-- ears, seal-brown points like a ragdoll -->
+        <g class="ear ear-l">
+          <path d="M22 46 L10 6 L52 26 Z" fill="#8a6a4f"/>
+          <path d="M25 38 L17 14 L45 27 Z" fill="#e7b8ae"/>
+        </g>
+        <g class="ear ear-r">
+          <path d="M98 46 L110 6 L68 26 Z" fill="#8a6a4f"/>
+          <path d="M95 38 L103 14 L75 27 Z" fill="#e7b8ae"/>
+        </g>
+        <!-- head -->
+        <ellipse cx="60" cy="62" rx="46" ry="40" fill="#f6ecdd" stroke="#dcc9a9" stroke-width="2.5"/>
+        <!-- soft mask patches -->
+        <path d="M28 40 Q42 24 58 34 Q44 38 34 50 Z" fill="#cfb391" opacity="0.55"/>
+        <path d="M92 40 Q78 24 62 34 Q76 38 86 50 Z" fill="#cfb391" opacity="0.55"/>
+        <!-- blue eyes -->
+        <ellipse cx="42" cy="61" rx="8.5" ry="10" fill="#6fa8d4"/>
+        <circle cx="44.5" cy="57.5" r="3" fill="#fff"/>
+        <ellipse cx="78" cy="61" rx="8.5" ry="10" fill="#6fa8d4"/>
+        <circle cx="80.5" cy="57.5" r="3" fill="#fff"/>
+        <!-- nose and mouth -->
+        <path d="M56 73 L64 73 L60 79 Z" fill="#dfa0a0"/>
+        <path d="M60 79 Q60 84 53 85 M60 79 Q60 84 67 85" stroke="#b09776" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- whiskers -->
+        <g stroke="#cdbb9c" stroke-width="2" stroke-linecap="round">
+          <path d="M30 70 Q18 68 8 64" fill="none"/>
+          <path d="M30 76 Q18 78 9 78" fill="none"/>
+          <path d="M90 70 Q102 68 112 64" fill="none"/>
+          <path d="M90 76 Q102 78 111 78" fill="none"/>
+        </g>
+      </svg>
+      <h1>Ragdoll or not?</h1>
+      <p class="tagline">Upload a cat. A neural network passes judgement.</p>
+    </header>
+
+    <div id="model-status" class="model-status">
+      <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+      <span id="status-text">warming up the judge…</span>
+    </div>
+
+    <div id="dropzone" class="deskmat" tabindex="0" role="button" aria-label="Upload a cat photo">
+      <svg class="paw" viewBox="0 0 64 64" aria-hidden="true">
+        <ellipse cx="32" cy="42" rx="14" ry="11" fill="#c69a62"/>
+        <ellipse cx="14" cy="27" rx="6" ry="8" fill="#c69a62"/>
+        <ellipse cx="26" cy="19" rx="6" ry="8" fill="#c69a62"/>
+        <ellipse cx="38" cy="19" rx="6" ry="8" fill="#c69a62"/>
+        <ellipse cx="50" cy="27" rx="6" ry="8" fill="#c69a62"/>
+      </svg>
+      <p><strong>Drop a cat here</strong><br>or click to choose a photo</p>
+      <input type="file" id="file-input" accept="image/*" hidden>
+    </div>
+
+    <button id="judge-btn" class="keycap judge" type="button" disabled>Judge my cat</button>
+
+  </main>
+
+  <aside class="about">
+    <h2>About</h2>
+    <p>A <strong>resnet18</strong> convolutional network, pretrained on ImageNet and
+      fine-tuned in PyTorch on a 949-photo, five-breed dataset to spot ragdolls.</p>
+    <dl class="stats">
+      <div><dt>test F1</dt><dd>0.806</dd></div>
+      <div><dt>precision</dt><dd>0.806</dd></div>
+      <div><dt>recall</dt><dd>0.806</dd></div>
+      <div><dt>photos</dt><dd>949</dd></div>
+    </dl>
+    <p>The model is exported to ONNX and runs entirely in your browser,
+      so your photo never leaves your device.</p>
+    <p>This is part of a from-scratch ML project: first a hand-derived
+      NumPy network, then an MLP baseline, then transfer learning.
+      <strong>The project is still in progress, so the judge will not
+      always be right.</strong> This page is the deployed result.</p>
+  </aside>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.min.js"
+          integrity="sha384-viYmIzsXdPb1ErOTdWrs+j0B4FjltSSGeHvt08cedBpoO5xvp3qMRSo05NZTuuzh"
+          crossorigin="anonymous"></script>
+  <script src="app.js"></script>
+</body>
+</html>

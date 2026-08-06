@@ -37,6 +37,8 @@ cache/
 *.pt
 *.pth
 *.onnx
+# ...except the deployed model — Vercel serves it from the repo
+!frontend/model.onnx
 runs/
 logs/
 checkpoints/
