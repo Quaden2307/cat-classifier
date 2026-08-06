@@ -76,11 +76,16 @@ after adding random horizontal flips" is.
   one cat changing sides moves recall by 1/31 ≈ 0.032. Differences smaller than that
   are not evidence of anything.
 
+**Done (deployment)**
+- Live at **https://cat-classifier-five.vercel.app/** — static site on Vercel,
+  root directory `frontend/`, no build step. README written for the public repo.
+
 **Next**
-- Deploy `frontend/` to Vercel and test in a real browser with photos outside the
-  dataset. Better weights swap in later by re-running the export — the frontend
-  never changes.
-- Later: from-scratch CNN comparison (the original stage 4), then the write-up.
+- From-scratch CNN comparison (the original stage 4), then the write-up.
+- One deliberate data batch later: more ragdolls + phase-2 breeds, dedupe against
+  the existing 949, rebuild the split, recompute the class weight, retrain
+  everything for the final comparison table. Better ResNet weights swap into the
+  live site by re-running the export — the frontend never changes.
 
 ---
 
