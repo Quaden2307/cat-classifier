@@ -20,6 +20,66 @@ after adding random horizontal flips" is.
 
 ---
 
+## 2026-08-05
+
+**Done**
+- Stage 5 pulled forward: `resnet/model.py` — pretrained resnet18, every layer frozen,
+  head swapped to `Linear(512, 2)`, so only 1,026 of 11.2M parameters train. ImageNet
+  normalization on (mandatory here — the pretrained weights were fit under it). Same
+  loop, loss, and metrics as the MLP, so the architecture is the only change.
+- 5 epochs: val F1 0.658 → 0.732, still rising at the end. Test (one look):
+  **P 0.718 / R 0.903 / F1 0.800**, confusion matrix [[101, 11], [3, 28]] — caught 28 of
+  31 ragdolls, 11 false alarms in 112 negatives.
+
+**Decided**
+- **Reordered the plan: fine-tuned ResNet before the from-scratch CNN.** A deployable
+  model plus frontend must exist well before the deadline; the ResNet is the model that
+  ships, and the published benchmark (~82% from scratch vs ~97% fine-tuned at this data
+  size) says the CNN cannot close the gap anyway. The CNN stays in the project as the
+  comparison piece, built after deployment works end to end.
+
+**Learned / hit**
+- MLP 0.48 → ResNet 0.80 test F1 on identical data, loop, and loss. The gap is
+  features, not tuning — the strongest argument in the project for transfer learning.
+- Weight download failed with `SSL: CERTIFICATE_VERIFY_FAILED` — Python installed from
+  python.org does not use the system certificate store until its bundled
+  `Install Certificates.command` is run. One-time fix.
+
+**Next**
+- Unfreeze `layer4` at lr 1e-5 (head stays at 1e-3), 10 epochs — iterate on **val
+  only**, test stays untouched until the final number.
+- Frontend/deployment for the ResNet.
+
+---
+
+## 2026-08-03
+
+**Done**
+- Stage 3 complete: MLP baseline trained on the cat images (`nn/model.py`) —
+  `Flatten → Linear(150528, 128) → ReLU → Linear(128, 2)`, Adam, weighted
+  cross-entropy, 10 epochs. Best val F1 **0.517** (epoch 6), settling around 0.48.
+
+**Decided**
+- **Class-weighted loss** `[1.0, 3.61]` (= 520/144, the training-split imbalance) —
+  required to get the MLP off the majority-class answer at all. Details in
+  project-notes; applies to every model trained on this split.
+
+**Learned / hit**
+- First run at lr 1e-3: epoch-1 train loss 12.1 — Adam's first steps are ~40% of the
+  first layer's init scale at this width, blowing the weights apart before recovery.
+  Dropped to 1e-4.
+- **Unweighted loss collapsed to the majority class**: F1 0.000 for 10 straight epochs
+  while val loss fell to 0.45 — *below* the 0.52 of always answering "not ragdoll."
+  Loss alone cannot detect this failure; only the P/R/F1 print exposed it.
+- Weighted run never stabilized: recall oscillated 0.13 ↔ 0.97 across epochs — the
+  model thrashing its threshold rather than learning features. Expected from flattened
+  pixels; this is the baseline the CNN and ResNet must beat.
+
+**Next**
+- Pretrained ResNet (stage reordered — see 2026-08-05).
+
+---
+
 ## 2026-08-01
 
 **Done**

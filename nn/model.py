@@ -34,7 +34,7 @@ class CatMLP(nn.Module):
         return x
 
 model = CatMLP(in_features=224*224*3, hidden=128, out_features=2)
-criterion = nn.CrossEntropyLoss()
+criterion = nn.CrossEntropyLoss(weight=torch.tensor([1.0, 3.61]))
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
 
 

@@ -61,6 +61,14 @@ attributable.
 - **Transforms are attached per split**, not baked into the dataset class. Train, val,
   and test each get their own pipeline so augmentation can never reach val or test.
 - Dedupe before splitting; split before augmenting.
+- **Class-weighted loss**: `CrossEntropyLoss(weight=[1.0, 3.61])`, where 3.61 = 520/144,
+  the non-ragdoll : ragdoll ratio in the training split. Each ragdoll's loss counts
+  3.61×, so the 144 ragdolls pull on the gradient as hard as the 520 negatives. Without
+  it the MLP collapsed to always predicting "not ragdoll" — F1 0.000 across 10 epochs
+  while loss still fell, since the majority class is a cheap minimum under imbalance.
+  Applies to every model trained on this split, for comparability; recompute the ratio
+  if the split ever changes. Note the printed loss becomes a weighted average, so runs
+  with and without the weight are not comparable on loss.
 
 ## Open decisions
 
