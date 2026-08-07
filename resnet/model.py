@@ -50,7 +50,7 @@ for param in model.layer4.parameters():
 
 model = model.to(device)
 
-criterion = nn.CrossEntropyLoss(weight=torch.tensor([1.0, 3.61]).to(device))
+criterion = nn.CrossEntropyLoss(weight=torch.tensor([1.0, 3.37]).to(device))
 optimizer = torch.optim.Adam([
     {'params': model.layer4.parameters(), 'lr': 1e-5},
     {'params': model.fc.parameters(),     'lr': 1e-3},

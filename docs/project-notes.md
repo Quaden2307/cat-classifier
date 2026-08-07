@@ -67,8 +67,10 @@ attributable.
   it the MLP collapsed to always predicting "not ragdoll" — F1 0.000 across 10 epochs
   while loss still fell, since the majority class is a cheap minimum under imbalance.
   Applies to every model trained on this split, for comparability; recompute the ratio
-  if the split ever changes. Note the printed loss becomes a weighted average, so runs
-  with and without the weight are not comparable on loss.
+  if the split ever changes. To recompute: in `data/splits.csv`, take the rows where
+  `split == train` and divide the count with `ragdoll == 0` by the count with
+  `ragdoll == 1`. Note the printed loss becomes a weighted average, so runs with and
+  without the weight are not comparable on loss.
 
 ## Open decisions
 
@@ -85,8 +87,10 @@ attributable.
 
 ## Known data issues
 
-Dataset: `data/cat_v1`, **949 images** after cleanup, from the Kaggle link in
-`data/data_link`. Ragdoll is 206 of them (21.7%).
+Dataset: `data/cat_v1`, **1,722 images** — the original Kaggle set (949 after
+cleanup) plus the overlapping breeds from the Oxford-IIIT Pet dataset, merged
+2026-08-06. Ragdoll is 395 of them (22.9%). Oxford has no domestic shorthair, so
+that class remains Kaggle-only at 170.
 
 Resolved:
 

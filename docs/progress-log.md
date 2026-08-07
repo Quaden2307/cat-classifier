@@ -20,6 +20,44 @@ after adding random horizontal flips" is.
 
 ---
 
+## 2026-08-06
+
+**Done (data batch + retrain)**
+- Added the overlapping breeds from the Oxford-IIIT Pet dataset (bengal, maine coon,
+  ragdoll, siamese; it has no domestic shorthair): 949 → **1,722 images**, ragdoll
+  395 (22.9%). Merge sweep over all 1,722: every file decodes, no cross-source or
+  cross-breed duplicates; removed 2 double-copied files and one frame from each of
+  2 same-cat burst pairs (4 deletions total).
+- Rebuilt the split: train 1,205 / val 258 / test 259, ragdoll 22.9 / 22.9 / 23.2%.
+  Test positives 31 → 60, so the noise floor tightens to roughly ±0.01 F1.
+  Recomputed the class weight: 3.61 → **3.37** (929/276).
+- Retrained the ship config (10 epochs, layer4 + head): val F1 settled 0.83–0.84.
+  Test: **P 0.800 / R 0.867 / F1 0.832**, confusion matrix [[186, 13], [8, 52]] —
+  52 of 60 ragdolls caught, 13 false alarms in 199 negatives.
+- Re-exported to ONNX; parity 259/259 vs PyTorch. Site stats updated.
+- Doubling the data moved test F1 0.806 → 0.832 (different test sets, but the new
+  one is twice as reliable). The data lever works; next stop toward 0.90 is more
+  data again and/or unfreezing layer3.
+- MLP baseline not yet rerun on the new split — its 0.52 refers to the old split
+  until then.
+
+**Done**
+- Experiment: doubled training to 20 epochs, same seed. Epochs 1–10 replayed the
+  documented run exactly (the seed pins init, shuffle order, and flips). Epochs 11–20:
+  val loss flat between 0.186 and 0.208 with no sustained trend, val F1 bouncing
+  0.746–0.812 inside the established noise band, train loss 0.056 → 0.012.
+  Test: **identical metrics and confusion matrix** to the 10-epoch model —
+  P/R/F1 0.806, [[106, 6], [6, 25]]. Ten extra epochs moved nothing.
+- Added MIT license.
+
+**Decided**
+- **Ship config stays at 10 epochs.** The model converges by ~epoch 10; further
+  training only memorizes the 664 training images harder without changing a single
+  test decision. The bottleneck is data, not training time — the planned data batch
+  (more ragdolls + phase-2 breeds) is the next lever that can actually move F1.
+
+---
+
 ## 2026-08-05
 
 **Done**
