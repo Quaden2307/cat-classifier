@@ -127,9 +127,10 @@ need recomputing if that changes.
 Because it is a one-line change, turning it on is a clean before/after measurement
 against the un-normalized baseline rather than an assumption.
 
-The pretrained ResNet stage is the exception and is not optional there: it requires
-ImageNet's constants, `mean=[0.485, 0.456, 0.406]` and `std=[0.229, 0.224, 0.225]`,
-since the weights were fit under them.
+The pretrained ResNet stage is the exception and is not optional there. ImageNet is
+the ~1.2M-image, 1,000-class dataset the pretrained resnet18 weights were trained on,
+and normalization must use its constants, `mean=[0.485, 0.456, 0.406]` and
+`std=[0.229, 0.224, 0.225]`, since the weights were fit under them.
 
 ## Data loading
 
